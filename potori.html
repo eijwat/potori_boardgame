@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ぽとり POTORI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#12151a;            /* 夜の藍 */
+  --panel:#1a1f27;
+  --panel2:#222834;
+  --line:#2e3644;
+  --ink:#e8e6df;
+  --dim:#8b93a0;
+  --ai:#6fa8dc;            /* 藍のひかり */
+  --ai-soft:#6fa8dc44;
+  --gold:#d8b271;
+  --shu:#e0512b;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1100px 480px at 50% -8%, #1d2530 0%, transparent 62%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;
+  display:flex;flex-direction:column;align-items:center;
+  min-height:100%;
+  user-select:none;-webkit-user-select:none;
+}
+header{
+  width:100%;max-width:460px;display:flex;align-items:center;gap:8px;
+  padding:12px 14px 6px;
+}
+#logo{flex:1;display:flex;align-items:baseline;gap:7px;min-width:0}
+#logo .kanji{font-family:"Shippori Mincho",serif;font-weight:700;font-size:22px;color:var(--gold);letter-spacing:.06em;white-space:nowrap}
+#logo .latin{font-size:11.5px;font-weight:700;letter-spacing:.18em;color:var(--ink);white-space:nowrap}
+button.flat{
+  background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:7px 12px;font-size:12.5px;cursor:pointer;
+}
+button.flat:active{transform:translateY(1px)}
+button.flat:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+
+/* ---- capture trays (signature) ---- */
+#trays{width:100%;max-width:460px;display:flex;flex-direction:column;gap:6px;padding:6px 14px 0}
+.tray{
+  display:flex;align-items:center;gap:9px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:8px 11px;
+  transition:border-color .25s, box-shadow .25s;
+}
+.tray.on{border-color:var(--ai);box-shadow:0 0 0 1px var(--ai-soft)}
+.tray .dot{width:15px;height:15px;border-radius:50%;flex:none;border:1px solid #0006}
+.dot.b{background:radial-gradient(circle at 34% 30%, #3f4750, #0b0d10 65%)}
+.dot.w{background:radial-gradient(circle at 34% 30%, #ffffff, #ddd8ca 70%)}
+.tray .who{font-size:12px;color:var(--dim);width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tray.on .who{color:var(--ink)}
+.tray .slots{flex:1;display:flex;gap:4px}
+.slot{
+  flex:1;aspect-ratio:1;max-width:22px;border-radius:50%;
+  background:var(--panel2);border:1px dashed #3a4352;
+  transition:background .3s, border-color .3s, transform .3s;
+}
+.slot.got.b{background:radial-gradient(circle at 34% 30%, #3f4750, #0b0d10 65%);border:1px solid #0006}
+.slot.got.w{background:radial-gradient(circle at 34% 30%, #ffffff, #ddd8ca 70%);border:1px solid #0006}
+.slot.pop{animation:slotpop .45s ease-out}
+@keyframes slotpop{0%{transform:scale(.3)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.tray .num{font-family:"Shippori Mincho",serif;font-size:18px;font-weight:700;color:var(--gold);min-width:38px;text-align:right}
+
+#status{
+  width:100%;max-width:460px;padding:8px 14px 2px;min-height:34px;
+  font-size:13px;color:var(--gold);text-align:center;line-height:1.5;
+}
+#board-wrap{width:100%;max-width:460px;padding:6px 14px}
+svg#board{width:100%;height:auto;display:block;border-radius:14px}
+#legend{
+  width:100%;max-width:460px;padding:4px 18px 14px;
+  font-size:11px;color:var(--dim);text-align:center;line-height:1.7;
+}
+.cell-hit{fill:transparent;cursor:pointer}
+.cap-hint{pointer-events:none}
+.pop-ring{fill:none;stroke:var(--ai);stroke-width:2;animation:pop 1s ease-out forwards;pointer-events:none}
+@keyframes pop{
+  0%{opacity:.9;stroke-width:3}
+  100%{opacity:0;stroke-width:.5;r:34}
+}
+.fall{animation:fall .7s ease-in forwards;pointer-events:none}
+@keyframes fall{
+  0%{opacity:1;transform:translateY(0) rotate(0deg)}
+  100%{opacity:0;transform:translateY(90px) rotate(14deg)}
+}
+.modal-bg{
+  position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;
+  z-index:20;padding:18px;
+}
+.hidden{display:none!important}
+.modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:22px 20px;max-width:400px;width:100%;max-height:82vh;overflow-y:auto;
+  font-size:13.5px;line-height:1.8;
+}
+.modal h2{font-size:17px;margin-bottom:10px}
+.modal h2 .kana{font-family:"Shippori Mincho",serif;color:var(--gold);font-size:14px;margin-left:6px}
+.modal h3{font-size:13.5px;margin:14px 0 4px;color:var(--gold)}
+.modal p,.modal li{color:#d5d9e0}
+.modal ul{padding-left:18px}
+.modal .btnrow{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+.modal button{
+  flex:1;min-width:110px;background:var(--panel2);color:var(--ink);
+  border:1px solid var(--line);border-radius:11px;padding:12px 10px;
+  font-size:13.5px;cursor:pointer;
+}
+.modal button.primary{border-color:var(--gold);color:var(--gold)}
+.modal button:active{transform:translateY(1px)}
+.lvlrow{display:flex;gap:8px;margin:8px 0 2px}
+.lvlrow button{padding:9px 6px;font-size:12.5px}
+.lvlrow button.sel{border-color:var(--ai);color:var(--ai)}
+#result-title{font-family:"Shippori Mincho",serif;font-size:24px;color:var(--gold);text-align:center;margin-bottom:6px}
+#result-body{text-align:center;color:#d5d9e0;margin-bottom:4px}
+</style>
+</head>
+<body>
+<header>
+  <div id="logo"><span class="kanji">ぽとり</span><span class="latin">POTORI</span></div>
+  <button class="flat" id="btn-lang">EN</button>
+  <button class="flat" id="btn-rules">？</button>
+  <button class="flat" id="btn-new"></button>
+</header>
+
+<div id="trays">
+  <div class="tray" id="tray0">
+    <div class="dot b"></div><div class="who" id="who0"></div>
+    <div class="slots" id="slots0"></div>
+    <div class="num"><span id="cap0">0</span>/10</div>
+  </div>
+  <div class="tray" id="tray1">
+    <div class="dot w"></div><div class="who" id="who1"></div>
+    <div class="slots" id="slots1"></div>
+    <div class="num"><span id="cap1">0</span>/10</div>
+  </div>
+</div>
+
+<div id="status"></div>
+<div id="board-wrap"><svg id="board" viewBox="0 0 444 444" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div id="legend"></div>
+
+<div class="modal-bg hidden" id="modal-rules">
+  <div class="modal" id="rules-body"></div>
+</div>
+<div class="modal-bg" id="modal-mode">
+  <div class="modal">
+    <h2 id="mode-title"></h2>
+    <p id="mode-sub" style="color:var(--dim);font-size:12.5px"></p>
+    <div class="lvlrow" id="lvlrow">
+      <button data-lvl="0" id="lvl0"></button>
+      <button data-lvl="1" id="lvl1" class="sel"></button>
+      <button data-lvl="2" id="lvl2"></button>
+      <button data-lvl="3" id="lvl3"></button>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="btn-first"></button>
+      <button id="btn-second"></button>
+      <button id="btn-2p"></button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="modal-result">
+  <div class="modal">
+    <div id="result-title"></div>
+    <div id="result-body"></div>
+    <div class="btnrow">
+      <button class="primary" id="btn-again"></button>
+      <button id="btn-close-result"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= core ================= */
+var H=(function(){
+  var N=6,TARGET=[10,10],MAXM=60;
+  var DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  function inb(r,c){return r>=0&&r<N&&c>=0&&c<N;}
+  function newGame(){
+    var b=[];for(var r=0;r<N;r++){b.push([]);for(var c=0;c<N;c++)b[r].push(null);}
+    var m=N/2;
+    b[m-1][m]=0;b[m][m-1]=0;b[m-1][m-1]=1;b[m][m]=1;
+    return{board:b,turn:0,moves:0,caps:[0,0],winner:null,reason:null,last:null,lastCaptured:[]};
+  }
+  function capturesAt(b,p,r,c){
+    var out=[];
+    for(var d=0;d<8;d++){
+      var dr=DIRS[d][0],dc=DIRS[d][1],line=[],r1=r+dr,c1=c+dc;
+      while(inb(r1,c1)&&b[r1][c1]===1-p){line.push([r1,c1]);r1+=dr;c1+=dc;}
+      if(line.length>0&&inb(r1,c1)&&b[r1][c1]===p)
+        for(var i=0;i<line.length;i++)out.push(line[i]);
+    }
+    return out;
+  }
+  function legalMoves(g){
+    var out=[];
+    if(g.winner!==null)return out;
+    for(var r=0;r<N;r++)for(var c=0;c<N;c++)
+      if(g.board[r][c]===null)out.push([r,c]);
+    return out;
+  }
+  function play(g,r,c){
+    if(g.winner!==null)return{ok:false};
+    if(!inb(r,c)||g.board[r][c]!==null)return{ok:false};
+    var p=g.turn,caps=capturesAt(g.board,p,r,c);
+    g.board[r][c]=p;
+    for(var i=0;i<caps.length;i++)g.board[caps[i][0]][caps[i][1]]=null;
+    g.caps[p]+=caps.length;g.moves++;g.last=[r,c];g.lastCaptured=caps;
+    if(g.caps[p]>=TARGET[p]){g.winner=p;g.reason='target';}
+    else{
+      g.turn=1-p;
+      var anyEmpty=false;
+      for(var r2=0;r2<N&&!anyEmpty;r2++)for(var c2=0;c2<N;c2++)
+        if(g.board[r2][c2]===null){anyEmpty=true;break;}
+      if(!anyEmpty||g.moves>=MAXM){
+        g.reason=anyEmpty?'maxmoves':'full';
+        if(g.caps[0]>g.caps[1])g.winner=0;
+        else if(g.caps[1]>g.caps[0])g.winner=1;
+        else g.winner=1;
+      }
+    }
+    return{ok:true,captured:caps};
+  }
+  function clone(g){
+    var b=[];for(var r=0;r<N;r++)b.push(g.board[r].slice());
+    return{board:b,turn:g.turn,moves:g.moves,caps:g.caps.slice(),
+      winner:g.winner,reason:g.reason,last:g.last,lastCaptured:[]};
+  }
+  function countStones(b,p){
+    var n=0;for(var r=0;r<N;r++)for(var c=0;c<N;c++)if(b[r][c]===p)n++;
+    return n;
+  }
+  return{N:N,TARGET:TARGET,newGame:newGame,capturesAt:capturesAt,
+    legalMoves:legalMoves,play:play,clone:clone,countStones:countStones};
+})();
+
+/* ================= AI ================= */
+var AI=(function(){
+  function bestImmediate(b,p){
+    var best=0;
+    for(var r=0;r<H.N;r++)for(var c=0;c<H.N;c++){
+      if(b[r][c]!==null)continue;
+      var n=H.capturesAt(b,p,r,c).length;
+      if(n>best)best=n;
+    }
+    return best;
+  }
+  function evalG(g,p){
+    if(g.winner!==null)return(g.winner===p)?10000-g.moves:-10000+g.moves;
+    var q=1-p,v=(g.caps[p]-g.caps[q])*100;
+    var my=bestImmediate(g.board,p),op=bestImmediate(g.board,q);
+    if(g.turn===p)v+=my*40-op*22;else v+=my*22-op*40;
+    v+=(H.countStones(g.board,p)-H.countStones(g.board,q))*2;
+    return v;
+  }
+  function orderMoves(g,moves){
+    var p=g.turn,sc=[];
+    for(var i=0;i<moves.length;i++)
+      sc.push([H.capturesAt(g.board,p,moves[i][0],moves[i][1]).length,moves[i]]);
+    sc.sort(function(a,b){return b[0]-a[0];});
+    var out=[];for(var j=0;j<sc.length;j++)out.push(sc[j][1]);
+    return out;
+  }
+  function ab(g,depth,alpha,beta,p){
+    if(g.winner!==null||depth===0)return evalG(g,p);
+    var moves=orderMoves(g,H.legalMoves(g));
+    if(g.turn===p){
+      var v=-1e9;
+      for(var i=0;i<moves.length;i++){
+        var g2=H.clone(g);H.play(g2,moves[i][0],moves[i][1]);
+        var s=ab(g2,depth-1,alpha,beta,p);
+        if(s>v)v=s;if(v>alpha)alpha=v;
+        if(alpha>=beta)break;
+      }
+      return v;
+    }
+    var v2=1e9;
+    for(var k=0;k<moves.length;k++){
+      var g3=H.clone(g);H.play(g3,moves[k][0],moves[k][1]);
+      var s2=ab(g3,depth-1,alpha,beta,p);
+      if(s2<v2)v2=s2;if(v2<beta)beta=v2;
+      if(alpha>=beta)break;
+    }
+    return v2;
+  }
+  function abMove(g,depth){
+    var p=g.turn,moves=orderMoves(g,H.legalMoves(g)),best=null,bestV=-1e9;
+    for(var i=0;i<moves.length;i++){
+      var g2=H.clone(g);H.play(g2,moves[i][0],moves[i][1]);
+      var v=ab(g2,depth-1,-1e9,1e9,p)+Math.random()*0.3;
+      if(v>bestV){bestV=v;best=moves[i];}
+    }
+    return best;
+  }
+  function easyMove(g){
+    /* capture if possible (biggest), else near-random with slight center bias */
+    var p=g.turn,moves=H.legalMoves(g),best=null,bestN=0;
+    for(var i=0;i<moves.length;i++){
+      var n=H.capturesAt(g.board,p,moves[i][0],moves[i][1]).length;
+      if(n>bestN){bestN=n;best=moves[i];}
+    }
+    if(best&&Math.random()<0.8)return best;
+    var m=moves[Math.floor(Math.random()*moves.length)];
+    return m;
+  }
+  function abMoveTimed(g,maxDepth,timeMs){
+    var t0=Date.now(),p=g.turn;
+    var moves=H.legalMoves(g),best=moves[0];
+    function order(gg,mv){
+      var sc=[];
+      for(var i=0;i<mv.length;i++)
+        sc.push([H.capturesAt(gg.board,gg.turn,mv[i][0],mv[i][1]).length,mv[i]]);
+      sc.sort(function(a,b){return b[0]-a[0];});
+      var o=[];for(var j=0;j<sc.length;j++)o.push(sc[j][1]);
+      return o;
+    }
+    function abt(gg,d,alpha,beta){
+      if(gg.winner!==null||d===0)return evalG(gg,p);
+      if(Date.now()-t0>timeMs)throw 'time';
+      var mv=order(gg,H.legalMoves(gg));
+      if(gg.turn===p){
+        var v=-1e9;
+        for(var i=0;i<mv.length;i++){
+          var g2=H.clone(gg);H.play(g2,mv[i][0],mv[i][1]);
+          var s=abt(g2,d-1,alpha,beta);
+          if(s>v)v=s;if(v>alpha)alpha=v;
+          if(alpha>=beta)break;
+        }
+        return v;
+      }
+      var v2=1e9;
+      for(var k=0;k<mv.length;k++){
+        var g3=H.clone(gg);H.play(g3,mv[k][0],mv[k][1]);
+        var s2=abt(g3,d-1,alpha,beta);
+        if(s2<v2)v2=s2;if(v2<beta)beta=v2;
+        if(alpha>=beta)break;
+      }
+      return v2;
+    }
+    var ordered=order(g,moves);
+    for(var depth=2;depth<=maxDepth;depth++){
+      var curBest=null,curV=-1e9;
+      try{
+        for(var i=0;i<ordered.length;i++){
+          var g2=H.clone(g);H.play(g2,ordered[i][0],ordered[i][1]);
+          var v=abt(g2,depth-1,-1e9,1e9)+Math.random()*0.2;
+          if(v>curV){curV=v;curBest=ordered[i];}
+        }
+        best=curBest;
+        ordered=[best].concat(ordered.filter(function(m){return m!==best;}));
+      }catch(e){break;}
+      if(Date.now()-t0>timeMs)break;
+    }
+    return best;
+  }
+  function move(g,lvl){
+    if(lvl===0)return easyMove(g);
+    if(lvl===1)return abMove(g,2);
+    if(lvl===2)return abMove(g,4);
+    return abMoveTimed(g,9,1500);
+  }
+  return{move:move};
+})();
+
+/* ================= i18n ================= */
+var I18N={
+  ja:{
+    latin:'POTORI',
+    you:'あなた', cpu:'CPU', black:'黒', white:'白',
+    p1:'黒（先手）', p2:'白（後手）',
+    newGame:'新規',
+    modeTitle:'ぽとり', modeSub:'挟んだ石は、返らずに落ちる。先に10個取れば勝ち。',
+    lvl:['やさしい','ふつう','つよい','もっと強い'],
+    first:'先手で挑む', second:'後手で挑む', twop:'ふたりで',
+    turnYou:'あなたの番です', turnCpu:'CPUが考えています…',
+    turnB:'黒の番です', turnW:'白の番です',
+    took:function(n){return n+'個 落としました！';},
+    reach:function(n){return 'あと'+n+'個で勝ち！';},
+    winYou:'あなたの勝ち！', loseYou:'CPUの勝ち',
+    winB:'黒の勝ち', winW:'白の勝ち',
+    byTarget:'10個先取', byFull:'盤が埋まりました', byMax:'規定手数に到達',
+    capsLine:function(b,w){return '取った石　黒 '+b+' — 白 '+w;},
+    again:'もう一局', close:'閉じる',
+    legend:'空いているマスならどこでも置けます ・ ◎印は挟めるマス',
+    rulesTitle:'遊びかた', rulesKana:'ぽとり POTORI',
+    rules:[
+      ['盤とはじまり','6×6の盤。中央に黒白2個ずつ置いた状態から、黒が先に打ちます。'],
+      ['石を置く','交互に、空いているマスならどこにでも置けます。オセロと違い「挟める場所」の縛りはありません。'],
+      ['はさんで落とす','置いた石と自分の石で、相手の石の列をまっすぐ挟むと（縦・横・ななめ）、挟まれた石は裏返らずに盤から落ちて、あなたの取り石になります。一度に複数方向で取れます。'],
+      ['捨て石は安全','挟まれる位置に自分から置いても、取られません。取りが起きるのは「石を置いた側」だけ。わざと挟ませる形に置く「捨て石」が駆け引きの核です。'],
+      ['勝ち','先に相手の石を10個取ったら勝ち。石が落ちて盤が空くので、終盤ほど盤はスカスカ、展開はスピーディーになります。'],
+      ['決着がつかないとき','盤が埋まるか60手に達したら終了し、取り石の多い方が勝ち。同数なら後手（白）の勝ちです。']
+    ]
+  },
+  en:{
+    latin:'POTORI',
+    you:'You', cpu:'CPU', black:'Black', white:'White',
+    p1:'Black (first)', p2:'White (second)',
+    newGame:'New',
+    modeTitle:'POTORI', modeSub:'Caught between two, it drops. Capture 10 to win.',
+    lvl:['Easy','Normal','Strong','Strongest'],
+    first:'Play first', second:'Play second', twop:'Two players',
+    turnYou:'Your move', turnCpu:'CPU is thinking…',
+    turnB:'Black to move', turnW:'White to move',
+    took:function(n){return 'Dropped '+n+' stone'+(n>1?'s':'')+'!';},
+    reach:function(n){return n+' more to win!';},
+    winYou:'You win!', loseYou:'CPU wins',
+    winB:'Black wins', winW:'White wins',
+    byTarget:'First to 10 captures', byFull:'Board is full', byMax:'Move limit reached',
+    capsLine:function(b,w){return 'Captures — Black '+b+' / White '+w;},
+    again:'Play again', close:'Close',
+    legend:'Place on any empty cell ・ ◎ marks capturing cells',
+    rulesTitle:'How to play', rulesKana:'ぽとり POTORI',
+    rules:[
+      ['Board & start','6×6 board with two stones each in the center. Black moves first.'],
+      ['Placing','Players alternate placing a stone on ANY empty cell — unlike Othello, you are never forced to capture.'],
+      ['Sandwich & drop','If your placed stone and another of your stones bracket a straight line of enemy stones (orthogonal or diagonal), those stones don\'t flip — they fall off the board into your capture tray. Multiple directions can capture at once.'],
+      ['Bait stones are safe','Placing your own stone INTO a sandwich is safe: captures only trigger for the player who just placed. Deliberately offering stones — suteishi — is the heart of the game.'],
+      ['Winning','First to capture 10 enemy stones wins. Since stones leave the board, the endgame opens up and accelerates.'],
+      ['If nobody reaches 10','If the board fills or 60 moves pass, the higher capture count wins; ties go to White (second player).']
+    ]
+  }
+};
+var lang=(navigator.language||'').toLowerCase().indexOf('ja')===0?'ja':'en';
+
+/* ================= UI ================= */
+var SVGNS='http://www.w3.org/2000/svg';
+var CELL=70,PAD=12,BOARD=document.getElementById('board');
+var game=null,hist=[],mode='cpu',human=0,cpuLvl=1,busy=false;
+
+function t(){return I18N[lang];}
+
+function el(tag,attrs,parent){
+  var e=document.createElementNS(SVGNS,tag);
+  for(var k in attrs)e.setAttribute(k,attrs[k]);
+  if(parent)parent.appendChild(e);
+  return e;
+}
+function cellXY(r,c){return[PAD+c*CELL,PAD+r*CELL];}
+
+function buildSlots(){
+  for(var p=0;p<2;p++){
+    var host=document.getElementById('slots'+p);
+    host.innerHTML='';
+    for(var i=0;i<10;i++){
+      var d=document.createElement('div');
+      d.className='slot';d.id='slot'+p+'_'+i;
+      host.appendChild(d);
+    }
+  }
+}
+
+function drawBoard(){
+  BOARD.innerHTML='';
+  /* wooden->lacquer board bg */
+  var defs=el('defs',{},BOARD);
+  var grad=el('radialGradient',{id:'bd',cx:'50%',cy:'38%',r:'80%'},defs);
+  el('stop',{offset:'0%','stop-color':'#2b3442'},grad);
+  el('stop',{offset:'100%','stop-color':'#1c222c'},grad);
+  el('rect',{x:0,y:0,width:444,height:444,rx:14,fill:'url(#bd)'},BOARD);
+  el('rect',{x:PAD-4,y:PAD-4,width:CELL*6+8,height:CELL*6+8,rx:8,
+    fill:'none',stroke:'#3a4557','stroke-width':1.5},BOARD);
+  for(var i=0;i<=6;i++){
+    el('line',{x1:PAD+i*CELL,y1:PAD,x2:PAD+i*CELL,y2:PAD+6*CELL,
+      stroke:'#39445655','stroke-width':1},BOARD);
+    el('line',{x1:PAD,y1:PAD+i*CELL,x2:PAD+6*CELL,y2:PAD+i*CELL,
+      stroke:'#39445655','stroke-width':1},BOARD);
+  }
+  var gStones=el('g',{id:'g-stones'},BOARD);
+  var gFx=el('g',{id:'g-fx'},BOARD);
+  var gHints=el('g',{id:'g-hints'},BOARD);
+  var gHit=el('g',{id:'g-hit'},BOARD);
+  for(var r=0;r<6;r++)for(var c=0;c<6;c++){
+    (function(r,c){
+      var xy=cellXY(r,c);
+      var h=el('rect',{x:xy[0],y:xy[1],width:CELL,height:CELL,'class':'cell-hit'},gHit);
+      h.addEventListener('click',function(){onCell(r,c);});
+    })(r,c);
+  }
+}
+
+function stoneGrad(defsDone){
+  if(document.getElementById('sg-b'))return;
+  var defs=BOARD.querySelector('defs');
+  var gb=el('radialGradient',{id:'sg-b',cx:'34%',cy:'30%',r:'75%'},defs);
+  el('stop',{offset:'0%','stop-color':'#4a525c'},gb);
+  el('stop',{offset:'65%','stop-color':'#0b0d10'},gb);
+  var gw=el('radialGradient',{id:'sg-w',cx:'34%',cy:'30%',r:'75%'},defs);
+  el('stop',{offset:'0%','stop-color':'#ffffff'},gw);
+  el('stop',{offset:'70%','stop-color':'#d8d3c5'},gw);
+}
+
+function render(fx){
+  stoneGrad();
+  var gS=document.getElementById('g-stones');
+  var gH=document.getElementById('g-hints');
+  gS.innerHTML='';gH.innerHTML='';
+  for(var r=0;r<6;r++)for(var c=0;c<6;c++){
+    var p=game.board[r][c];
+    if(p===null)continue;
+    var xy=cellXY(r,c),cx=xy[0]+CELL/2,cy=xy[1]+CELL/2;
+    el('circle',{cx:cx,cy:cy,r:26,fill:p===0?'url(#sg-b)':'url(#sg-w)',
+      stroke:'#0007','stroke-width':1},gS);
+    if(game.last&&game.last[0]===r&&game.last[1]===c&&game.winner===null){
+      el('circle',{cx:cx,cy:cy,r:5,fill:'var(--ai)',opacity:.9},gS);
+    }
+  }
+  /* capture hints for the side to move (human turns only) */
+  var showHints=(game.winner===null)&&(mode==='2p'||game.turn===human);
+  if(showHints){
+    for(var r2=0;r2<6;r2++)for(var c2=0;c2<6;c2++){
+      if(game.board[r2][c2]!==null)continue;
+      var n=H.capturesAt(game.board,game.turn,r2,c2).length;
+      if(n>0){
+        var xy2=cellXY(r2,c2),cx2=xy2[0]+CELL/2,cy2=xy2[1]+CELL/2;
+        el('circle',{cx:cx2,cy:cy2,r:9,fill:'none',stroke:'var(--ai)',
+          'stroke-width':1.4,opacity:.55,'class':'cap-hint'},gH);
+        el('circle',{cx:cx2,cy:cy2,r:2.6,fill:'var(--ai)',opacity:.55,'class':'cap-hint'},gH);
+      }
+    }
+  }
+  /* fx: falling captured stones + ring on placed */
+  if(fx){
+    var gF=document.getElementById('g-fx');
+    for(var i=0;i<fx.caps.length;i++){
+      var rc=fx.caps[i],xy3=cellXY(rc[0],rc[1]);
+      var wrap=el('g',{'class':'fall'},gF);
+      el('circle',{cx:xy3[0]+CELL/2,cy:xy3[1]+CELL/2,r:26,
+        fill:fx.victim===0?'url(#sg-b)':'url(#sg-w)',stroke:'#0007'},wrap);
+      (function(w){setTimeout(function(){if(w.parentNode)w.parentNode.removeChild(w);},750);})(wrap);
+    }
+    if(fx.placed){
+      var xy4=cellXY(fx.placed[0],fx.placed[1]);
+      var ring=el('circle',{cx:xy4[0]+CELL/2,cy:xy4[1]+CELL/2,r:26,'class':'pop-ring'},
+        document.getElementById('g-fx'));
+      setTimeout(function(){if(ring.parentNode)ring.parentNode.removeChild(ring);},1000);
+    }
+  }
+  renderTrays(fx);
+  renderStatus(fx);
+}
+
+function renderTrays(fx){
+  for(var p=0;p<2;p++){
+    document.getElementById('cap'+p).textContent=game.caps[p];
+    var victimClass=(p===0)?'w':'b'; /* p captures opponent stones */
+    for(var i=0;i<10;i++){
+      var s=document.getElementById('slot'+p+'_'+i);
+      s.className='slot';
+      if(i<game.caps[p]){
+        s.classList.add('got',victimClass);
+        if(fx&&fx.mover===p&&i>=game.caps[p]-fx.caps.length)s.classList.add('pop');
+      }
+    }
+    document.getElementById('tray'+p).classList.toggle('on',
+      game.winner===null&&game.turn===p);
+  }
+  var n0,n1;
+  if(mode==='cpu'){
+    n0=(human===0)?t().you:t().cpu;n1=(human===1)?t().you:t().cpu;
+    document.getElementById('who0').textContent=t().black+'・'+n0;
+    document.getElementById('who1').textContent=t().white+'・'+n1;
+  }else{
+    document.getElementById('who0').textContent=t().p1;
+    document.getElementById('who1').textContent=t().p2;
+  }
+}
+
+function renderStatus(fx){
+  var s=document.getElementById('status'),msg='';
+  if(game.winner!==null){msg='';}
+  else if(fx&&fx.caps.length>0){
+    msg=t().took(fx.caps.length);
+    var left=10-game.caps[fx.mover];
+    if(left<=3&&left>0)msg+='　'+t().reach(left);
+  }
+  else if(mode==='cpu')msg=(game.turn===human)?t().turnYou:t().turnCpu;
+  else msg=(game.turn===0)?t().turnB:t().turnW;
+  if(game.winner===null&&msg===''&&mode==='cpu')
+    msg=(game.turn===human)?t().turnYou:t().turnCpu;
+  s.textContent=msg;
+}
+
+function onCell(r,c){
+  if(busy||game.winner!==null)return;
+  if(mode==='cpu'&&game.turn!==human)return;
+  var mover=game.turn;
+  hist.push(H.clone(game));
+  var res=H.play(game,r,c);
+  if(!res.ok){hist.pop();return;}
+  render({caps:res.captured,victim:1-mover,mover:mover,placed:[r,c]});
+  afterMove();
+}
+
+function afterMove(){
+  if(game.winner!==null){setTimeout(showResult,900);return;}
+  if(mode==='cpu'&&game.turn!==human){
+    busy=true;
+    setTimeout(function(){
+      var mover=game.turn;
+      var m=AI.move(game,cpuLvl);
+      var res=H.play(game,m[0],m[1]);
+      busy=false;
+      render({caps:res.captured,victim:1-mover,mover:mover,placed:m});
+      if(game.winner!==null)setTimeout(showResult,900);
+    },420);
+  }
+}
+
+function showResult(){
+  var ttl,body;
+  if(mode==='cpu')ttl=(game.winner===human)?t().winYou:t().loseYou;
+  else ttl=(game.winner===0)?t().winB:t().winW;
+  var why=(game.reason==='target')?t().byTarget:
+          (game.reason==='full')?t().byFull:t().byMax;
+  body=why+'<br>'+t().capsLine(game.caps[0],game.caps[1]);
+  document.getElementById('result-title').textContent=ttl;
+  document.getElementById('result-body').innerHTML=body;
+  document.getElementById('modal-result').classList.remove('hidden');
+}
+
+function newGame(){
+  game=H.newGame();hist=[];busy=false;
+  render(null);
+}
+
+/* ---------- chrome ---------- */
+function applyLang(){
+  var T=t();
+  document.getElementById('btn-lang').textContent=(lang==='ja')?'EN':'日本語';
+  document.getElementById('btn-new').textContent=T.newGame;
+  document.getElementById('mode-title').textContent=T.modeTitle;
+  document.getElementById('mode-sub').textContent=T.modeSub;
+  for(var i=0;i<4;i++)document.getElementById('lvl'+i).textContent=T.lvl[i];
+  document.getElementById('btn-first').textContent=T.first;
+  document.getElementById('btn-second').textContent=T.second;
+  document.getElementById('btn-2p').textContent=T.twop;
+  document.getElementById('btn-again').textContent=T.again;
+  document.getElementById('btn-close-result').textContent=T.close;
+  document.getElementById('legend').textContent=T.legend;
+  var rb=document.getElementById('rules-body'),h='';
+  h+='<h2>'+T.rulesTitle+'<span class="kana">'+T.rulesKana+'</span></h2>';
+  for(var j=0;j<T.rules.length;j++)
+    h+='<h3>'+T.rules[j][0]+'</h3><p>'+T.rules[j][1]+'</p>';
+  h+='<div class="btnrow"><button class="primary" id="btn-close-rules">'+T.close+'</button></div>';
+  rb.innerHTML=h;
+  document.getElementById('btn-close-rules').addEventListener('click',function(){
+    document.getElementById('modal-rules').classList.add('hidden');
+  });
+  if(game)render(null);
+}
+
+document.getElementById('btn-lang').addEventListener('click',function(){
+  lang=(lang==='ja')?'en':'ja';applyLang();
+});
+document.getElementById('btn-rules').addEventListener('click',function(){
+  document.getElementById('modal-rules').classList.remove('hidden');
+});
+document.getElementById('btn-new').addEventListener('click',function(){
+  document.getElementById('modal-result').classList.add('hidden');
+  document.getElementById('modal-mode').classList.remove('hidden');
+});
+var lvlBtns=document.querySelectorAll('#lvlrow button');
+for(var li=0;li<lvlBtns.length;li++){
+  lvlBtns[li].addEventListener('click',function(){
+    for(var k=0;k<lvlBtns.length;k++)lvlBtns[k].classList.remove('sel');
+    this.classList.add('sel');
+    cpuLvl=+this.getAttribute('data-lvl');
+  });
+}
+function startCpu(h){
+  mode='cpu';human=h;
+  document.getElementById('modal-mode').classList.add('hidden');
+  newGame();
+  if(human===1)afterMoveKick();
+}
+function afterMoveKick(){
+  busy=true;
+  setTimeout(function(){
+    var mover=game.turn;
+    var m=AI.move(game,cpuLvl);
+    var res=H.play(game,m[0],m[1]);
+    busy=false;
+    render({caps:res.captured,victim:1-mover,mover:mover,placed:m});
+  },420);
+}
+document.getElementById('btn-first').addEventListener('click',function(){startCpu(0);});
+document.getElementById('btn-second').addEventListener('click',function(){startCpu(1);});
+document.getElementById('btn-2p').addEventListener('click',function(){
+  mode='2p';
+  document.getElementById('modal-mode').classList.add('hidden');
+  newGame();
+});
+document.getElementById('btn-again').addEventListener('click',function(){
+  document.getElementById('modal-result').classList.add('hidden');
+  document.getElementById('modal-mode').classList.remove('hidden');
+});
+document.getElementById('btn-close-result').addEventListener('click',function(){
+  document.getElementById('modal-result').classList.add('hidden');
+});
+
+/* boot */
+buildSlots();
+drawBoard();
+game=H.newGame();
+applyLang();
+render(null);
+</script>
+</body>
+</html>
