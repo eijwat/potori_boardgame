@@ -59,6 +59,9 @@ The Strongest level searches depth 5 in the midgame and reaches **depth 8 in the
 - Japanese/English bilingual UI with browser-language auto-detection and a live toggle.
 - Capture animation: stones tumble off the board (*potori*); captured stones fill a ten-slot tray per player.
 
+## Play at Github Pages!!!
+[POTPRI](https://eijwat.github.io/potori_boardgame/)
+
 ---
 
 <a name="日本語"></a>
@@ -93,6 +96,9 @@ The Strongest level searches depth 5 in the midgame and reaches **depth 8 in the
 - ルールエンジンは26項目の単体テスト、UIは22項目のjsdom統合テストで検証済み
 - 日本語／英語の二言語UI（ブラウザ言語の自動判定＋切替ボタン）
 - 取られた石が「ぽとり」と落ちるアニメーションと、10個の皿（あげはま）が埋まるトレイ表示
+
+## Play at Github Pages!!!
+[POTPRI](https://eijwat.github.io/potori_boardgame/)
 
 ---
 
