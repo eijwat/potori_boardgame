@@ -60,7 +60,7 @@ The Strongest level searches depth 5 in the midgame and reaches **depth 8 in the
 - Capture animation: stones tumble off the board (*potori*); captured stones fill a ten-slot tray per player.
 
 ## Play at Github Pages!!!
-[POTPRI](https://eijwat.github.io/potori_boardgame/)
+[POTORI](https://eijwat.github.io/potori_boardgame/)
 
 ---
 
@@ -98,7 +98,7 @@ The Strongest level searches depth 5 in the midgame and reaches **depth 8 in the
 - 取られた石が「ぽとり」と落ちるアニメーションと、10個の皿（あげはま）が埋まるトレイ表示
 
 ## Play at Github Pages!!!
-[POTPRI](https://eijwat.github.io/potori_boardgame/)
+[POTORI](https://eijwat.github.io/potori_boardgame/)
 
 ---
 
