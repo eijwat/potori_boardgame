@@ -1,4 +1,4 @@
-# ぽとり POTORI
+# ぽとり POTORI Board Game
 
 **Caught between two, it drops. Capture 10 to win.**
 **挟んだ石は、返らずに落ちる。先に10個取れば勝ち。**
